@@ -1,0 +1,8 @@
+default rendernode
+
+label rendernode
+kernel vmlinuz26
+append hostname=<NODE> initrd=kernel26.img rootfstype=nfs root=/dev/nfs nfsroot=192.168.1.1:/netboot/node/<NODE>,v3,rsize=16384,wsize=16384 ip=dhcp
+
+prompt 0
+

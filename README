@@ -1,0 +1,69 @@
+----------------
+.fuse_pxebootfs.
+----------------
+
+EXAMPLE USAGE:
+
+The easiest way to explain how this thing works is probably to present
+an example setup which you can modify to suit your needs.
+
+See the pxebootfs.cfg and pxelinux.cfg.template files for examples. They are
+currently set up to be fully operational with the following assumptions.
+
+ - Your PXE nfsroot is located at /netboot/root
+ - Your NFS server will be serving each PXE client from /netboot/node/<NODE>
+ - The server will store all client file modifications in /netboot/overlay/<NODE>
+ - pxelinux.cfg.template specifies nfsroot=/netboot/node/<NODE>
+    note: "<NODE>" is replaced by the hexadecimal representation of the
+          PXE client's IP address. eg. 'C0A80102' = '192.168.1.2' when
+          tftpd reads the config data from pxebootfs.
+
+          To clarify: *ACTUALLY* put '<NODE>' in the PXE config.
+ 
+ - fuse_pxebootfs probably needs to be run as root, since it needs to
+   mount new AUFS filesystems and export them through NFS via exportfs.
+
+ - Mount pxebootfs onto the pxelinux.cfg directory in your tftpd's root. In
+   the example configuration file, we use /var/lib/tftpd/pxelinux.cfg
+
+pxebootfs.cfg example
+  [PXEBOOTFS]
+  pxe_template: /var/lib/tftpd/pxelinux.cfg.template
+  node_dir: /netboot/node
+  root_dir: /netboot/root
+  overlay_dir: /netboot/overlay
+  start_fsid: 10000
+
+CONFIGURATION:
+
+ - pxe_template
+ example: pxe_template: /var/lib/tftpd/pxelinux.cfg.template
+   The filepath to your pxelinux.cfg file. The nfsroot= entry should be
+   something like: 
+        
+        nfsroot=SERVERIP:/netboot/node/<NODE>
+
+   Where /netboot/node is also pointed to by the node_dir config option.
+
+ - node_dir
+ example: node_dir: /netboot/node
+   This is the directory where new pxe client nodes will be built and
+   shared via NFS. This directly needs to be writable by the FUSE filesystem.
+
+ - root_dir
+ example: root_dir: /netboot/root
+   Path to the root filesystem which will be used as the read-only portion of
+   the client's new nfsroot construction. This can be read-only, because client
+   writes will be directed to the overlay_dir aufs branch (explained next).
+
+ - overlay_dir
+ example: overlay_dir: /netboot/overlay
+   New a directory is created in the overlay_dir for each PXE client. All PXE
+   client filesystem modifications will be stored in their respesctive overlay
+   directories.
+
+ - start_fsid
+ example: start_fsid: 10000
+   Any big integer, exportfs uses this for the fsid option. The value is
+   incremented with each export. 
+
